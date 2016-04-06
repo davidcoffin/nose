@@ -100,7 +100,15 @@ class Coverage(Plugin):
                           default=env.get('NOSE_COVER_NO_PRINT'),
                           dest="cover_no_print",
                           help="Suppress printing of coverage information")
-
+        parser.add_option("--cover-concurrency", action="store",
+                          default=env.get("NOSE_COVER_CONCURRENCY", "thread"),
+                          dest="cover_concurrency",
+                          metavar="LIB",
+                          choices=("greenlet", "eventlet", "gevent", "thread",
+                          "multiprocessing"),
+                          help="Properly measure coverage for code that uses a "
+                          "concurrency library")
+ 
     def configure(self, options, conf):
         """
         Configure plugin.
@@ -124,6 +132,7 @@ class Coverage(Plugin):
         self.coverErase = bool(options.cover_erase)
         self.coverTests = bool(options.cover_tests)
         self.coverPackages = []
+        self.coverConcurrency = options.cover_concurrency
         if options.cover_packages:
             if isinstance(options.cover_packages, (list, tuple)):
                 cover_packages = options.cover_packages
@@ -155,7 +164,8 @@ class Coverage(Plugin):
             self.status['active'] = True
             self.coverInstance = coverage.coverage(auto_data=False,
                 branch=self.coverBranches, data_suffix=conf.worker,
-                source=self.coverPackages, config_file=self.coverConfigFile)
+                source=self.coverPackages, config_file=self.coverConfigFile,
+                concurrency=self.coverConcurrency)
             self.coverInstance._warn_no_data = False
             self.coverInstance.is_worker = conf.worker
             self.coverInstance.exclude('#pragma[: ]+[nN][oO] [cC][oO][vV][eE][rR]')
